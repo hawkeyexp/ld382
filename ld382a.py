@@ -244,7 +244,6 @@ def getValues(sleepTime,clientSocket):
 ##############################################################
 def decodeCommandblock(data):
 	global transitionActive
-	transitionActive = True
 	#parse command
 	msgBlock=data.split( ',' )
 	msgCMD=msgBlock.pop(0)
@@ -314,6 +313,7 @@ if HUE and SAT and INT and addrLD382A:
 else:
 	# open socket for incoming connections and run in server mode
 	serversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	serversock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
 	serversock.bind(ADDR)
 	serversock.listen(2)
 	read_list = [serversock]
@@ -365,6 +365,8 @@ else:
 						s.close()
 						read_list.remove(s)
 		if transitionSlotsLeft > 0 and not transitionActive:
+			# prohibit race-condition and set transitionActive-state in the main loop
+			transitionActive = True
 			thread.start_new_thread(decodeCommandblock, (transitionRingbuffer[transitionCurrentSlot],))
 			transitionSlotsLeft = transitionSlotsLeft - 1
 			#print "played: %s Slot: %d, remaining: %d" % (transitionRingbuffer[transitionCurrentSlot],transitionCurrentSlot,transitionSlotsLeft)
